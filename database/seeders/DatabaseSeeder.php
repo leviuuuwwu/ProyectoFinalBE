@@ -2,9 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Cita;
 use App\Models\Especialidad;
+use App\Models\ProfesionalHorario;
 use App\Models\Servicio;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -55,12 +60,52 @@ class DatabaseSeeder extends Seeder
             'activo' => true,
         ]);
 
-        Servicio::create([
+        $consultaGeneral = Servicio::create([
             'especialidad_id' => $medicina->id,
             'nombre' => 'Consulta General',
             'descripcion' => 'Evaluación de síntomas, toma de presión y receta médica.',
             'duracion_minutos' => 30,
             'precio' => 20.00,
+        ]);
+
+        $medico = User::create([
+            'nombre' => 'Ana',
+            'apellido' => 'Médica',
+            'email' => 'medico@example.com',
+            'telefono' => '5551111111',
+            'password' => Hash::make('password'),
+            'rol' => 'medico',
+        ]);
+
+        $paciente = User::create([
+            'nombre' => 'Luis',
+            'apellido' => 'Paciente',
+            'email' => 'paciente@example.com',
+            'telefono' => '5552222222',
+            'password' => Hash::make('password'),
+            'rol' => 'paciente',
+        ]);
+
+        for ($d = 1; $d <= 5; $d++) {
+            ProfesionalHorario::create([
+                'user_id' => $medico->id,
+                'dia_semana' => $d,
+                'hora_inicio' => '08:00',
+                'hora_fin' => '16:00',
+                'intervalo_minutos' => 30,
+            ]);
+        }
+
+        $demo = Carbon::parse('2026-04-15 09:00:00', config('app.timezone'));
+
+        Cita::create([
+            'medico_id' => $medico->id,
+            'paciente_id' => $paciente->id,
+            'servicio_id' => $consultaGeneral->id,
+            'fecha_hora' => $demo,
+            'duracion_minutos' => 30,
+            'estado' => 'Programada',
+            'motivo' => 'Demo disponibilidad',
         ]);
     }
 }

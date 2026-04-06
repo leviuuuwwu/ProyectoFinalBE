@@ -18,6 +18,7 @@ class User extends Authenticatable
         'email',
         'telefono',
         'password',
+        'rol',
     ];
 
     protected $hidden = [
@@ -32,5 +33,20 @@ class User extends Authenticatable
             'password' => 'hashed',
             'activo' => 'boolean',
         ];
+    }
+
+    public function profesionalHorarios()
+    {
+        return $this->hasMany(ProfesionalHorario::class, 'user_id');
+    }
+
+    public function profesionalBloqueos()
+    {
+        return $this->hasMany(ProfesionalBloqueo::class, 'user_id');
+    }
+
+    public function citasComoMedico()
+    {
+        return $this->hasMany(Cita::class, 'medico_id');
     }
 }
