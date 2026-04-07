@@ -10,16 +10,24 @@ use App\Http\Controllers\Api\Auth\ProfileController;
 
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\ServicioController;
+use App\Http\Controllers\CitaController;
 
 // RUTAS PÚBLICAS
 Route::post('/auth/register', RegisterController::class);
 Route::post('/auth/login', LoginController::class);
 
-Route::get('/especialidades', [EspecialidadController::class, 'index']);
-Route::get('/servicios', [ServicioController::class, 'index']);
+Route::get('/especialidades', [EspecialidadController::class , 'index']);
+Route::get('/servicios', [ServicioController::class , 'index']);
 
 // RUTAS PROTEGIDAS
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/profile', ProfileController::class);
     Route::post('/auth/logout', LogoutController::class);
+
+    Route::get('/citas', [CitaController::class , 'index']);
+    Route::post('/citas', [CitaController::class , 'store']);
+    Route::get('/citas/{cita:uuid}', [CitaController::class , 'show']);
+    Route::patch('/citas/{cita:uuid}/cancelar', [CitaController::class , 'cancelar']);
+    Route::patch('/citas/{cita:uuid}/reprogramar', [CitaController::class , 'reprogramar']);
+    Route::patch('/citas/{cita:uuid}/completar', [CitaController::class , 'completar']);
 });
