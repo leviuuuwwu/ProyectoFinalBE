@@ -24,8 +24,16 @@ class LoginController extends Controller
             ]);
         }
 
+        if (! $user->activo) {
+            throw ValidationException::withMessages([
+                'email' => ['La cuenta está desactivada.'],
+            ]);
+        }
+
         $user->tokens()->delete(); // Ciberseguridad: Revoca tokens viejos
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        $user->load('roles');
 
         return response()->json([
             'message' => 'Login exitoso',

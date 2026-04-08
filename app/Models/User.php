@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuids;
+    use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
     public $incrementing = false;
 
@@ -25,6 +27,7 @@ class User extends Authenticatable
         'especialidad_id',
         'rol',
         'password',
+        'activo',
     ];
 
     protected $hidden = [

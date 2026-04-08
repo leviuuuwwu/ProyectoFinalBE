@@ -6,6 +6,7 @@ use App\Models\Cita;
 use App\Models\Especialidad;
 use App\Models\Servicio;
 use App\Models\User;
+use App\Support\Roles;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -27,6 +28,10 @@ class AdminDashboardTest extends TestCase
 		]);
 
 		$user->save();
+
+		if ($rol === Roles::ADMIN) {
+			$user->assignRole(Roles::ADMIN);
+		}
 
 		return $user;
 	}
