@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Auth\ProfileController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\CitaController;
+use App\Http\Controllers\AdminDashboardController;
 
 // RUTAS PÚBLICAS
 Route::post('/auth/register', RegisterController::class);
@@ -26,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/citas', [CitaController::class , 'index']);
     Route::get('/pacientes/{paciente}/historial', [CitaController::class , 'historial']);
+    Route::get('/admin/dashboard', AdminDashboardController::class);
     Route::post('/citas', [CitaController::class , 'store']);
     Route::get('/citas/{cita:uuid}', [CitaController::class , 'show']);
     Route::post('/citas/{cita:uuid}/notas', [CitaController::class , 'notas']);
