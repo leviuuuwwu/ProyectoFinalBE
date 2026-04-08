@@ -2,22 +2,34 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Cita extends Model
 {
-    use HasUuids;
+    use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Cita $cita) {
+            if (empty($cita->uuid)) {
+                $cita->uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     protected $fillable = [
-        'medico_id',
+        'uuid',
         'paciente_id',
+        'medico_id',
         'servicio_id',
         'fecha_hora',
         'duracion_minutos',
-        'estado',
         'motivo',
+        'estado',
+        'notas',
     ];
 
     protected function casts(): array
@@ -25,6 +37,11 @@ class Cita extends Model
         return [
             'fecha_hora' => 'datetime',
         ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 
     public function medico(): BelongsTo

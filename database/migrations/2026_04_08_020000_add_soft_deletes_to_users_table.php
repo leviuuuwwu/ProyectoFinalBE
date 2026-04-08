@@ -6,18 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        if (Schema::hasColumn('users', 'rol')) {
-            return;
-        }
-
         Schema::table('users', function (Blueprint $table) {
-            $table->string('rol', 32)->default('paciente');
+            $table->softDeletes();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
     }
 };
