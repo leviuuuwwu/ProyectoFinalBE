@@ -39,4 +39,9 @@ class CitaPolicy
     {
         return $user->rol === 'medico' && $user->id === $cita->medico_id;
     }
+
+    public function agregarNotas(User $user, Cita $cita)
+    {
+        return $user->rol === 'medico' && $user->id === $cita->medico_id;
+    }
 }

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Cita;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
@@ -13,6 +13,40 @@ class CitaControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** @return User */
+    private function createPaciente(array $attributes = [])
+    {
+        $user = new User(array_merge([
+            'nombre' => 'Paciente',
+            'apellido' => 'Prueba',
+            'email' => 'paciente_' . uniqid() . '@test.com',
+            'telefono' => '77777777',
+            'rol' => 'paciente',
+            'password' => 'password',
+        ], $attributes));
+
+        $user->save();
+
+        return $user;
+    }
+
+    /** @return User */
+    private function createMedico(array $attributes = [])
+    {
+        $user = new User(array_merge([
+            'nombre' => 'Medico',
+            'apellido' => 'Prueba',
+            'email' => 'medico_' . uniqid() . '@test.com',
+            'telefono' => '88888888',
+            'rol' => 'medico',
+            'password' => 'password',
+        ], $attributes));
+
+        $user->save();
+
+        return $user;
+    }
+
     public function test_usuario_no_autenticado_no_puede_ver_citas()
     {
         $response = $this->getJson('/api/citas');
@@ -21,7 +55,8 @@ class CitaControllerTest extends TestCase
 
     public function test_usuario_no_autenticado_no_puede_ver_historial_de_paciente()
     {
-        $paciente = User::factory()->create(['rol' => 'paciente']);
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
 
         $response = $this->getJson('/api/pacientes/' . $paciente->id . '/historial');
 
@@ -30,14 +65,17 @@ class CitaControllerTest extends TestCase
 
     public function test_paciente_solo_puede_ver_sus_citas()
     {
-        $paciente = User::factory()->create(['rol' => 'paciente']);
-        $otroPaciente = User::factory()->create(['rol' => 'paciente']);
-        $medico = User::factory()->create(['rol' => 'medico']);
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $otroPaciente */
+        $otroPaciente = $this->createPaciente();
+        /** @var User $medico */
+        $medico = $this->createMedico();
 
         Cita::factory()->create(['paciente_id' => $paciente->id, 'medico_id' => $medico->id]);
         Cita::factory()->create(['paciente_id' => $otroPaciente->id, 'medico_id' => $medico->id]);
 
-        Sanctum::actingAs($paciente);
+        $this->actingAs($paciente, 'sanctum');
         $response = $this->getJson('/api/citas');
 
         $response->assertStatus(200)
@@ -46,18 +84,22 @@ class CitaControllerTest extends TestCase
 
     public function test_paciente_solo_puede_ver_su_historial_pasado_y_completado()
     {
-        Carbon::setTestNow(Carbon::parse('2026-04-07 10:00:00'));
+        Carbon::setTestNow(Carbon::create(2026, 4, 7, 10, 0, 0));
+
         try {
-            $paciente = User::factory()->create(['rol' => 'paciente']);
-            $otroPaciente = User::factory()->create(['rol' => 'paciente']);
-            $medico = User::factory()->create(['rol' => 'medico']);
+            /** @var User $paciente */
+            $paciente = $this->createPaciente();
+            /** @var User $otroPaciente */
+            $otroPaciente = $this->createPaciente();
+            /** @var User $medico */
+            $medico = $this->createMedico();
 
             Cita::factory()->create([
                 'paciente_id' => $paciente->id,
                 'medico_id' => $medico->id,
                 'fecha_hora' => now()->subDays(4),
                 'estado' => 'Atendida',
-                'motivo' => 'Control general 1',
+                'motivo' => 'control general 1',
             ]);
 
             Cita::factory()->create([
@@ -65,7 +107,7 @@ class CitaControllerTest extends TestCase
                 'medico_id' => $medico->id,
                 'fecha_hora' => now()->subDay(),
                 'estado' => 'Atendida',
-                'motivo' => 'Control general 2',
+                'motivo' => 'control general 2',
             ]);
 
             Cita::factory()->create([
@@ -73,7 +115,7 @@ class CitaControllerTest extends TestCase
                 'medico_id' => $medico->id,
                 'fecha_hora' => now()->addDay(),
                 'estado' => 'Atendida',
-                'motivo' => 'No debe salir por ser futura',
+                'motivo' => 'no debe salir por ser futura',
             ]);
 
             Cita::factory()->create([
@@ -81,7 +123,7 @@ class CitaControllerTest extends TestCase
                 'medico_id' => $medico->id,
                 'fecha_hora' => now()->subDays(2),
                 'estado' => 'Cancelada',
-                'motivo' => 'No debe salir por cancelada',
+                'motivo' => 'no debe salir por cancelada',
             ]);
 
             Cita::factory()->create([
@@ -89,19 +131,19 @@ class CitaControllerTest extends TestCase
                 'medico_id' => $medico->id,
                 'fecha_hora' => now()->subDays(3),
                 'estado' => 'Atendida',
-                'motivo' => 'No debe salir por otro paciente',
+                'motivo' => 'no debe salir por otro paciente',
             ]);
 
-            Sanctum::actingAs($paciente);
+            $this->actingAs($paciente, 'sanctum');
             $response = $this->getJson('/api/pacientes/' . $paciente->id . '/historial');
 
             $response->assertStatus(200)
                 ->assertJsonCount(2, 'data')
-                ->assertJsonPath('data.0.motivo', 'Control general 2')
-                ->assertJsonPath('data.1.motivo', 'Control general 1')
-                ->assertJsonMissing(['motivo' => 'No debe salir por ser futura'])
-                ->assertJsonMissing(['motivo' => 'No debe salir por cancelada'])
-                ->assertJsonMissing(['motivo' => 'No debe salir por otro paciente']);
+                ->assertJsonPath('data.0.motivo', 'control general 2')
+                ->assertJsonPath('data.1.motivo', 'control general 1')
+                ->assertJsonMissing(['motivo' => 'no debe salir por ser futura'])
+                ->assertJsonMissing(['motivo' => 'no debe salir por cancelada'])
+                ->assertJsonMissing(['motivo' => 'no debe salir por otro paciente']);
         } finally {
             Carbon::setTestNow();
         }
@@ -109,10 +151,12 @@ class CitaControllerTest extends TestCase
 
     public function test_otro_paciente_no_puede_ver_historial_ajeno()
     {
-        $paciente = User::factory()->create(['rol' => 'paciente']);
-        $otroPaciente = User::factory()->create(['rol' => 'paciente']);
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $otroPaciente */
+        $otroPaciente = $this->createPaciente();
 
-        Sanctum::actingAs($otroPaciente);
+        $this->actingAs($otroPaciente, 'sanctum');
         $response = $this->getJson('/api/pacientes/' . $paciente->id . '/historial');
 
         $response->assertStatus(403);
@@ -120,9 +164,10 @@ class CitaControllerTest extends TestCase
 
     public function test_error_de_validacion_al_crear_cita()
     {
-        $paciente = User::factory()->create(['rol' => 'paciente']);
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
 
-        Sanctum::actingAs($paciente);
+        $this->actingAs($paciente, 'sanctum');
         $response = $this->postJson('/api/citas', [
             'fecha_hora' => 'fecha-invalida'
         ]);
@@ -133,16 +178,18 @@ class CitaControllerTest extends TestCase
 
     public function test_creacion_de_cita_exitosa()
     {
-        $paciente = User::factory()->create(['rol' => 'paciente']);
-        $medico = User::factory()->create(['rol' => 'medico']);
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $medico */
+        $medico = $this->createMedico();
 
         $datos = [
             'medico_id' => $medico->id,
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
-            'motivo' => 'Chequeo general'
+            'motivo' => 'chequeo general'
         ];
 
-        Sanctum::actingAs($paciente);
+        $this->actingAs($paciente, 'sanctum');
         $response = $this->postJson('/api/citas', $datos);
 
         $response->assertStatus(201)
@@ -152,5 +199,103 @@ class CitaControllerTest extends TestCase
             'paciente_id' => $paciente->id,
             'medico_id' => $medico->id,
         ]);
+    }
+
+    public function test_medico_asignado_puede_agregar_notas_a_cita_completada()
+    {
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $medico */
+        $medico = $this->createMedico();
+
+        $cita = Cita::factory()->create([
+            'paciente_id' => $paciente->id,
+            'medico_id' => $medico->id,
+            'estado' => 'Atendida',
+            'notas' => null,
+        ]);
+
+        $this->actingAs($medico, 'sanctum');
+
+        $response = $this->postJson('/api/citas/' . $cita->uuid . '/notas', [
+            'notas' => 'paciente estable, continuar con control en 30 dias.',
+            'receta' => 'paracetamol 500mg cada 8 horas por 5 dias',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.notas', "paciente estable, continuar con control en 30 dias.\n\nReceta: paracetamol 500mg cada 8 horas por 5 dias");
+
+        $this->assertDatabaseHas('citas', [
+            'uuid' => $cita->uuid,
+            'notas' => "paciente estable, continuar con control en 30 dias.\n\nReceta: paracetamol 500mg cada 8 horas por 5 dias",
+        ]);
+    }
+
+    public function test_medico_no_asignado_no_puede_agregar_notas_a_cita_ajena()
+    {
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $medicoAsignado */
+        $medicoAsignado = $this->createMedico();
+        /** @var User $otroMedico */
+        $otroMedico = $this->createMedico();
+
+        $cita = Cita::factory()->create([
+            'paciente_id' => $paciente->id,
+            'medico_id' => $medicoAsignado->id,
+            'estado' => 'Atendida',
+        ]);
+
+        $this->actingAs($otroMedico, 'sanctum');
+
+        $response = $this->postJson('/api/citas/' . $cita->uuid . '/notas', [
+            'notas' => 'intento de acceso no permitido',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_no_se_pueden_agregar_notas_si_la_cita_no_esta_completada()
+    {
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $medico */
+        $medico = $this->createMedico();
+
+        $cita = Cita::factory()->create([
+            'paciente_id' => $paciente->id,
+            'medico_id' => $medico->id,
+            'estado' => 'Programada',
+        ]);
+
+        $this->actingAs($medico, 'sanctum');
+
+        $response = $this->postJson('/api/citas/' . $cita->uuid . '/notas', [
+            'notas' => 'esto no deberia guardarse',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'solo se pueden agregar notas a una cita completada.');
+    }
+
+    public function test_validacion_falla_si_no_envia_notas_ni_receta()
+    {
+        /** @var User $paciente */
+        $paciente = $this->createPaciente();
+        /** @var User $medico */
+        $medico = $this->createMedico();
+
+        $cita = Cita::factory()->create([
+            'paciente_id' => $paciente->id,
+            'medico_id' => $medico->id,
+            'estado' => 'Atendida',
+        ]);
+
+        $this->actingAs($medico, 'sanctum');
+
+        $response = $this->postJson('/api/citas/' . $cita->uuid . '/notas', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['notas', 'receta']);
     }
 }

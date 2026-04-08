@@ -6,6 +6,7 @@ use App\Models\Cita;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Http\Requests\AgregarNotasCitaRequest;
 use App\Http\Requests\StoreCitaRequest;
 use App\Http\Requests\ReprogramarCitaRequest;
 use App\Http\Resources\CitaResource;
@@ -36,7 +37,7 @@ class CitaController extends Controller
 
         if ($ocupado) {
             return response()->json([
-                'message' => 'El espacio seleccionado ya no está disponible.'
+                'message' => 'el espacio seleccionado ya no esta disponible.'
             ], 422);
         }
 
@@ -49,7 +50,10 @@ class CitaController extends Controller
             'estado' => 'Programada',
         ]);
 
-        return (new CitaResource($cita))->response()->setStatusCode(201);
+        return response()->json([
+            'message' => 'cita creada exitosamente.',
+            'data' => new CitaResource($cita),
+        ], 201);
     }
 
     public function historial(User $paciente)
@@ -72,12 +76,33 @@ class CitaController extends Controller
         return new CitaResource($cita);
     }
 
+    public function notas(AgregarNotasCitaRequest $request, Cita $cita)
+    {
+        $this->authorize('agregarNotas', $cita);
+
+        if ($cita->estado !== 'Atendida') {
+            return response()->json(['message' => 'solo se pueden agregar notas a una cita completada.'], 422);
+        }
+
+        $contenido = collect([
+            $request->notas,
+            $request->receta ? 'Receta: ' . $request->receta : null,
+        ])->filter()->implode("\n\n");
+
+        $cita->update(['notas' => $contenido]);
+
+        return response()->json([
+            'message' => 'notas agregadas exitosamente.',
+            'data' => new CitaResource($cita),
+        ]);
+    }
+
     public function cancelar(Cita $cita)
     {
         $this->authorize('cancelar', $cita);
 
         if ($cita->estado === 'Cancelada' || $cita->estado === 'Atendida') {
-            return response()->json(['message' => 'La cita no puede ser cancelada en su estado actual.'], 422);
+            return response()->json(['message' => 'la cita no puede ser cancelada en su estado actual.'], 422);
         }
 
         $cita->update(['estado' => 'Cancelada']);
@@ -100,7 +125,7 @@ class CitaController extends Controller
             ->exists();
 
         if ($ocupado) {
-            return response()->json(['message' => 'El médico no tiene disponibilidad en esta nueva fecha/hora.'], 422);
+            return response()->json(['message' => 'el medico no tiene disponibilidad en esta nueva fecha/hora.'], 422);
         }
 
         $cita->update([
@@ -116,11 +141,11 @@ class CitaController extends Controller
         $this->authorize('completar', $cita);
 
         if ($cita->estado !== 'Programada' && $cita->estado !== 'Reprogramada') {
-            return response()->json(['message' => 'Solo las citas activas pueden marcarse como atendidas.'], 422);
+            return response()->json(['message' => 'solo las citas activas pueden marcarse como atendidas.'], 422);
         }
 
         $cita->update(['estado' => 'Atendida']);
 
-        return response()->json(['message' => 'Cita marcada como atendida.', 'data' => new CitaResource($cita)]);
+        return response()->json(['message' => 'cita marcada como atendida.', 'data' => new CitaResource($cita)]);
     }
 }
