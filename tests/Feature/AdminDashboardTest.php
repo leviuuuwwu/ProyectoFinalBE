@@ -14,13 +14,14 @@ class AdminDashboardTest extends TestCase
 {
 	use RefreshDatabase;
 
-	private function createUser($rol, $emailPrefix)
+	private function createUser($rol, $emailPrefix, $extra = [])
 	{
 		$user = new User([
 			'nombre' => ucfirst($rol),
 			'apellido' => 'Prueba',
 			'email' => $emailPrefix . '_' . uniqid() . '@test.com',
 			'telefono' => '77777777',
+			'especialidad_id' => $extra['especialidad_id'] ?? null,
 			'rol' => $rol,
 			'password' => 'password',
 		]);
@@ -54,16 +55,18 @@ class AdminDashboardTest extends TestCase
 		try {
 			$admin = $this->createUser('admin', 'admin');
 			$paciente = $this->createUser('paciente', 'paciente');
-			$medico = $this->createUser('medico', 'medico');
-
-			$especialidad = Especialidad::create([
+			$especialidadMedico = Especialidad::create([
 				'nombre' => 'odontologia',
 				'descripcion' => 'prueba',
 				'activo' => true,
 			]);
 
+			$medico = $this->createUser('medico', 'medico', [
+				'especialidad_id' => $especialidadMedico->id,
+			]);
+
 			Servicio::create([
-				'especialidad_id' => $especialidad->id,
+				'especialidad_id' => $especialidadMedico->id,
 				'nombre' => 'limpieza',
 				'descripcion' => 'servicio de prueba',
 				'duracion_minutos' => 30,
@@ -93,6 +96,7 @@ class AdminDashboardTest extends TestCase
 				->assertJsonPath('data.citas_totales', 2)
 				->assertJsonPath('data.citas_atendidas', 1)
 				->assertJsonPath('data.citas_programadas', 1)
+				->assertJsonPath('data.citas_por_especialidad.odontologia', 2)
 				->assertJsonPath('data.especialidades_activas', 1)
 				->assertJsonPath('data.servicios_activos', 1)
 				->assertJsonPath('data.ingresos', 0);

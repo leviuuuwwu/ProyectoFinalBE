@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'apellido',
         'email',
         'telefono',
+        'especialidad_id',
         'rol',
         'password',
     ];
@@ -37,5 +39,10 @@ class User extends Authenticatable
             'password' => 'hashed',
             'activo' => 'boolean',
         ];
+    }
+
+    public function especialidad(): BelongsTo
+    {
+        return $this->belongsTo(Especialidad::class);
     }
 }
