@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cita;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Http\Requests\StoreCitaRequest;
@@ -48,7 +49,21 @@ class CitaController extends Controller
             'estado' => 'Programada',
         ]);
 
-        return new CitaResource($cita);
+        return (new CitaResource($cita))->response()->setStatusCode(201);
+    }
+
+    public function historial(User $paciente)
+    {
+        $this->authorize('view-patient-history', $paciente);
+
+        $citas = Cita::query()
+            ->where('paciente_id', $paciente->id)
+            ->where('estado', 'Atendida')
+            ->where('fecha_hora', '<=', now())
+            ->orderByDesc('fecha_hora')
+            ->get();
+
+        return CitaResource::collection($citas);
     }
 
     public function show(Cita $cita)

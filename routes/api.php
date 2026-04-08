@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', LogoutController::class);
 
     Route::get('/citas', [CitaController::class , 'index']);
+    Route::get('/pacientes/{paciente}/historial', [CitaController::class , 'historial']);
     Route::post('/citas', [CitaController::class , 'store']);
     Route::get('/citas/{cita:uuid}', [CitaController::class , 'show']);
     Route::patch('/citas/{cita:uuid}/cancelar', [CitaController::class , 'cancelar']);

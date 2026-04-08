@@ -15,6 +15,7 @@ class CitaResource extends JsonResource
             'fecha_hora' => $this->fecha_hora,
             'estado' => $this->estado,
             'motivo' => $this->motivo,
+            'notas' => $this->notas,
         ];
     }
 }
