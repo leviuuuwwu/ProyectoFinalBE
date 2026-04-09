@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Roles;
 use App\Models\Cita;
 use App\Models\Especialidad;
 use App\Models\ProfesionalHorario;
@@ -102,6 +103,7 @@ class DatabaseSeeder extends Seeder
                 'rol' => 'medico',
             ]
         );
+        $medico->assignRole(Roles::PROFESIONAL);
 
         $paciente = User::firstOrCreate(
             ['email' => 'paciente@example.com'],
@@ -113,6 +115,7 @@ class DatabaseSeeder extends Seeder
                 'rol' => 'paciente',
             ]
         );
+        $paciente->assignRole(Roles::PACIENTE);
 
         for ($d = 1; $d <= 5; $d++) {
             ProfesionalHorario::firstOrCreate(

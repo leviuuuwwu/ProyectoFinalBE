@@ -44,7 +44,64 @@ Asegúrese de tener instalados los siguientes componentes en su entorno local:
 Siga estos pasos exactos para configurar el entorno de desarrollo local sin errores.
 
 ### 1. Clonar el repositorio e instalar dependencias
-```bash
-git clone <url-del-repositorio>
+git clone https://github.com/leviuuuwwu/ProyectoFinalBE
 cd ProyectoFinalBE
 composer install
+
+### 2. Configuración de PostgreSQL (pgAdmin)
+Abra pgAdmin y conéctese a su servidor local.
+
+Cree una nueva base de datos llamada EXACTAMENTE: Backend_DB (El framework se encargará de crear las tablas automáticamente).
+
+### 3. Configuración del entorno (.env)
+Copie el archivo de ejemplo y renómbrelo:
+
+cp .env.example .env
+Abra el archivo .env, localice la configuración de la base de datos y ajústela con sus credenciales de PostgreSQL locales:
+
+Fragmento de código
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=Backend_DB
+DB_USERNAME=postgres
+DB_PASSWORD=su_contraseña_aqui
+
+### 4. ⚠️ Configuración de PHP en Windows (Obligatorio)
+Para que PHP pueda comunicarse con PostgreSQL en Windows, debe habilitar los drivers nativos:
+
+Navegue a la carpeta de instalación de PHP (ej. C:\php).
+
+Abra el archivo php.ini con un editor de texto.
+
+Busque y descomente (quite el punto y coma ; al inicio) las siguientes líneas:
+
+extension=pdo_pgsql
+extension=pgsql
+Guarde el archivo.
+
+### 5. Migraciones, Seeders y Ejecución
+Con la conexión establecida, genere la clave de la aplicación y siembre la base de datos con los catálogos y el súper-administrador por defecto:
+
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan serve
+El servidor estará disponible en: http://127.0.0.1:8000
+
+### 6. 📚 Documentación Interactiva de la API (Swagger)
+El proyecto cuenta con documentación OpenAPI generada automáticamente y siempre sincronizada con el código fuente.
+
+Para probar los endpoints (Request/Response) de forma visual, una vez levantado el servidor, ingrese a:
+
+UI Interactiva (Swagger): http://127.0.0.1:8000/docs/api
+
+Especificación JSON: http://127.0.0.1:8000/docs/api.json
+
+### 7. 🧪 Ejecución de Pruebas (Testing)
+El sistema cuenta con una suite completa de pruebas (Feature y Unit tests) desarrolladas con el framework Pest / PHPUnit, validando rutas protegidas, lógicas de negocio, validaciones y roles.
+
+Para ejecutar la batería de pruebas, corra el siguiente comando:
+
+php artisan test
+
+    Desarrollado para el Proyecto de Cátedra - Diseño y Desarrollo de API Rest.
