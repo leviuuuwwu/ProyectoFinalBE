@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Cita;
 use App\Models\User;
+use App\Support\Roles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Http\Requests\AgregarNotasCitaRequest;
 use App\Http\Requests\StoreCitaRequest;
 use App\Http\Requests\ReprogramarCitaRequest;
 use App\Http\Resources\CitaResource;
+use Throwable;
 
 class CitaController extends Controller
 {
@@ -18,10 +20,9 @@ class CitaController extends Controller
         $user = $request->user();
         $query = Cita::query();
 
-        if ($user->rol === 'medico') {
+        if ($this->isRole($user, Roles::PROFESIONAL)) {
             $query->where('medico_id', $user->id);
-        }
-        elseif ($user->rol === 'paciente') {
+        } elseif ($this->isRole($user, Roles::PACIENTE)) {
             $query->where('paciente_id', $user->id);
         }
 
@@ -30,6 +31,12 @@ class CitaController extends Controller
 
     public function store(StoreCitaRequest $request)
     {
+        $medico = User::find($request->medico_id);
+
+        if (!$medico || !$this->isRole($medico, Roles::PROFESIONAL)) {
+            return response()->json(['message' => 'El medico seleccionado no es valido.'], 422);
+        }
+
         $ocupado = Cita::where('medico_id', $request->medico_id)
             ->where('fecha_hora', $request->fecha_hora)
             ->whereIn('estado', ['Programada', 'Reprogramada'])
@@ -45,6 +52,7 @@ class CitaController extends Controller
             'uuid' => Str::uuid(),
             'paciente_id' => $request->user()->id,
             'medico_id' => $request->medico_id,
+            'servicio_id' => $request->servicio_id,
             'fecha_hora' => $request->fecha_hora,
             'motivo' => $request->motivo,
             'estado' => 'Programada',
@@ -52,7 +60,7 @@ class CitaController extends Controller
 
         return response()->json([
             'message' => 'cita creada exitosamente.',
-            'data' => new CitaResource($cita),
+            'data' => new CitaResource($cita->load('servicio')),
         ], 201);
     }
 
@@ -147,5 +155,26 @@ class CitaController extends Controller
         $cita->update(['estado' => 'Atendida']);
 
         return response()->json(['message' => 'cita marcada como atendida.', 'data' => new CitaResource($cita)]);
+    }
+
+    private function isRole(User $user, string $role): bool
+    {
+        $legacy = strtolower((string) ($user->rol ?? ''));
+        $aliases = match ($role) {
+            Roles::PROFESIONAL => [Roles::PROFESIONAL, 'medico'],
+            Roles::PACIENTE => [Roles::PACIENTE],
+            Roles::ADMIN => [Roles::ADMIN],
+            default => [$role],
+        };
+
+        if (in_array($legacy, $aliases, true)) {
+            return true;
+        }
+
+        try {
+            return $user->hasAnyRole($aliases);
+        } catch (Throwable) {
+            return false;
+        }
     }
 }
