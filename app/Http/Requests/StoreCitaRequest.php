@@ -15,6 +15,7 @@ class StoreCitaRequest extends FormRequest
     {
         return [
             'medico_id' => 'required|exists:users,id',
+            'servicio_id' => 'required|exists:servicios,id',
             'fecha_hora' => 'required|date|after:now',
             'motivo' => 'nullable|string|max:255',
         ];

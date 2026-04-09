@@ -29,6 +29,7 @@ class DisponibilidadCalculoService
         }
 
         $citas = Cita::query()
+            ->with('servicio:id,duracion_minutos')
             ->where('medico_id', $medico->id)
             ->whereDate('fecha_hora', $fecha->format('Y-m-d'))
             ->whereIn('estado', ['Programada', 'Reprogramada'])
@@ -83,7 +84,14 @@ class DisponibilidadCalculoService
     {
         foreach ($citas as $cita) {
             $citaStart = $cita->fecha_hora->copy()->timezone(config('app.timezone'));
-            $citaEnd = $citaStart->copy()->addMinutes((int) $cita->duracion_minutos);
+            $duracion = (int) ($cita->servicio?->duracion_minutos ?? 0);
+
+            if ($duracion <= 0) {
+                // Fallback defensivo para citas legacy sin servicio vinculado.
+                $duracion = (int) ($cita->duracion_minutos ?? 30);
+            }
+
+            $citaEnd = $citaStart->copy()->addMinutes($duracion);
 
             if ($slotStart->lt($citaEnd) && $slotEnd->gt($citaStart)) {
                 return false;

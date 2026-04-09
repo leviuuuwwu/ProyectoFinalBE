@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Cita;
+use App\Models\Especialidad;
+use App\Models\Servicio;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -183,8 +185,20 @@ class CitaControllerTest extends TestCase
         /** @var User $medico */
         $medico = $this->createMedico();
 
+        $especialidad = Especialidad::query()->create([
+            'nombre' => 'Medicina General '.uniqid(),
+        ]);
+
+        $servicio = Servicio::query()->create([
+            'especialidad_id' => $especialidad->id,
+            'nombre' => 'Consulta General',
+            'duracion_minutos' => 30,
+            'activo' => true,
+        ]);
+
         $datos = [
             'medico_id' => $medico->id,
+            'servicio_id' => $servicio->id,
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'chequeo general'
         ];
@@ -198,6 +212,7 @@ class CitaControllerTest extends TestCase
         $this->assertDatabaseHas('citas', [
             'paciente_id' => $paciente->id,
             'medico_id' => $medico->id,
+            'servicio_id' => $servicio->id,
         ]);
     }
 

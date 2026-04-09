@@ -26,7 +26,6 @@ class Cita extends Model
         'medico_id',
         'servicio_id',
         'fecha_hora',
-        'duracion_minutos',
         'motivo',
         'estado',
         'notas',
